@@ -43,7 +43,7 @@ def get_field(day):
         result.append(list(i))
     return res
 
-# add_field("Иванов И.И.","утро","2020-03-17","Бокс")
+# add_field("Иванов И.И.","утро","2020-03-18","Бокс")
 
 # def get_attachment(post_id):
 #     connect = sqlite3.connect(database)

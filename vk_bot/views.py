@@ -22,16 +22,18 @@ def main_api(request):
 	if body["type"] == 'message_new':
 		if "payload" in body["object"]["message"]:
 			if body["object"]["message"]["payload"] == '{"command":"start"}':
-				start(body)
+				message = "Выбери предложенное действие"
+				send_keyboard(body,message)
 			elif body["object"]["message"]["payload"] == '{"command":"shedule"}':
 				send_shedule(body)
 			elif body["object"]["message"]["payload"] == '{"command":"add"}':
 				add_shedule(body)
+		elif body["object"]["message"]["text"].find("new",0,3)!=-1:
+			add_new(body)
 	return HttpResponse("ok")
 
-def start(body):
+def send_keyboard(body,message):
 	user_id = body["object"]["message"]["from_id"]
-	message = "Выбери предложенное действие"
 	keyboard = {
 		"one_time": True,
 		"buttons": [
@@ -61,24 +63,30 @@ def send_shedule(body):
 	user_id = body["object"]["message"]["from_id"]
 	today = str(datetime.datetime.today().date())
 	fields = database.get_field(today)
-	message = "Рассписание на " + today + ":\n"
+	message = "Рассписание на " + today + ":\n\n"
 	print(fields)
 	for field in fields:
-		print(field)
-		for data in field:
-			message += str(data) + " "
-		message += ";\n"	
+		message += "Тренировка: " + field[4] + ";\n"
+		message += "Тренер: " + field[1] + ";\n"
+		message += "Время: " + field[2] + " " + field[3] + ";\n\n"
+	send_keyboard(body,message)
+
+def add_shedule(body):
+	user_id = body["object"]["message"]["from_id"]
+	message = """Добавь новую запись в формате:
+	new/Имя тренера/время/дата/тип тренировки
+	
+	Например:
+	new/Иванов И.И/17:30/18.03.2020/Бокс
+	"""	
 	random_id = int(str(round(time.time()))+str(user_id))
 	vk_api.messages.send(user_id=user_id, message=message, random_id=random_id ,v=5.103)
 
-# def add_shedule(body):
-# 	user_id = body["object"]["message"]["from_id"]
-# 	today = str(datetime.datetime.today().date())
-# 	fields = database.get_field(today)
-# 	message = "Рассписание на " + today + ":\n"
-# 	for field in fields:
-# 		for data in field:
-# 			message += data + " "
-# 		message += ";\n"	
-# 	random_id = int(str(round(time.time()))+str(user_id))
-# 	vk_api.messages.send(user_id=user_id, message=message, random_id=random_id ,v=5.103)
+def add_new(body):
+	data = body["object"]["message"]["text"].split("/")
+	print(data)
+	data_date = data[3].split(".")
+	database.add_field(data[1],data[2],str(datetime.date(int(data_date[2]),int(data_date[1]),int(data_date[0]))),data[4])
+	user_id = body["object"]["message"]["from_id"]
+	message = "Новая запись успешно добавлена"
+	send_keyboard(body,message)
